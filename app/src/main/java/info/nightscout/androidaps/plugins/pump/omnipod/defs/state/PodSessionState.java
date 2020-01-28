@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import info.nightscout.androidaps.logging.L;
@@ -30,9 +32,10 @@ import info.nightscout.androidaps.utils.SP;
 
 public class PodSessionState extends PodState {
     private static final Logger LOG = LoggerFactory.getLogger(L.PUMPCOMM);
+    private static final int MAX_HANDLERS = 4;
 
     private final Map<AlertSlot, AlertType> configuredAlerts;
-    private transient PodStateChangedHandler stateChangedHandler;
+    private transient List<PodStateChangedHandler> stateChangedHandlers;
     private DateTime activatedAt;
     private DateTime expiresAt;
     private final FirmwareVersion piVersion;
@@ -70,12 +73,14 @@ public class PodSessionState extends PodState {
         handleUpdates();
     }
 
-    public void setStateChangedHandler(PodStateChangedHandler handler) {
-        // FIXME this is an ugly workaround for not being able to serialize the PodStateChangedHandler
-        if (stateChangedHandler != null) {
-            throw new IllegalStateException("A PodStateChangedHandler has already been already registered");
+    public void addStateChangedHandler(PodStateChangedHandler handler) {
+        if (stateChangedHandlers == null) {
+            stateChangedHandlers = new LinkedList<>();
         }
-        stateChangedHandler = handler;
+        if (stateChangedHandlers.size() > MAX_HANDLERS) {
+            throw new IllegalStateException("A PodStateChangedHandler Exceed the max number of handler");
+        }
+        stateChangedHandlers.add(handler);
     }
 
     public AlertType getConfiguredAlertType(AlertSlot alertSlot) {
@@ -253,8 +258,8 @@ public class PodSessionState extends PodState {
     private void handleUpdates() {
         Gson gson = OmnipodUtil.getGsonInstance();
         SP.putString(OmnipodConst.Prefs.PodState, gson.toJson(this));
-        if (stateChangedHandler != null) {
-            stateChangedHandler.handle(this);
+        for (PodStateChangedHandler handler : stateChangedHandlers) {
+            handler.handle(this);
         }
     }
 
@@ -262,7 +267,7 @@ public class PodSessionState extends PodState {
     public String toString() {
         return "PodSessionState{" +
                 "configuredAlerts=" + configuredAlerts +
-                ", stateChangedHandler=" + stateChangedHandler +
+                ", stateChangedHandlers=" + stateChangedHandlers +
                 ", activatedAt=" + activatedAt +
                 ", expiresAt=" + expiresAt +
                 ", piVersion=" + piVersion +

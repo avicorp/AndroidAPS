@@ -72,7 +72,7 @@ public class OmnipodManager {
         }
         this.communicationService = communicationService;
         if (podState != null) {
-            podState.setStateChangedHandler(podStateChangedHandler);
+            podState.addStateChangedHandler(podStateChangedHandler);
         }
         this.podState = podState;
         this.podStateChangedHandler = podStateChangedHandler;

@@ -44,7 +44,7 @@ public class AssignAddressAction implements OmnipodAction<PodSessionState> {
                 assignAddressResponse.getPmVersion(), assignAddressResponse.getLot(), assignAddressResponse.getTid(),
                 setupState.getPacketNumber(), 0x00); // At this point, for an unknown reason, the pod starts counting messages from 0 again
 
-        podState.setStateChangedHandler(podStateChangedHandler);
+        podState.addStateChangedHandler(podStateChangedHandler);
         return podState;
     }
 }
